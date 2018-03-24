@@ -99,3 +99,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Output directory and data directory
+hw1/out
+hw1/data
