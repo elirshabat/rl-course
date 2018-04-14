@@ -111,7 +111,7 @@ for images, labels in test_loader:
     total += labels.size(0)
 
 print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
-out_data['accuracy'] = (100 * correct / total)
+out_data['accuracy'] = (100 * correct.numpy().item() / total)
 
 # Save the Model
 model_dir = os.path.join(output_dir, 'model')

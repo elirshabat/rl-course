@@ -103,3 +103,6 @@ ENV/
 # Output directory and data directory
 hw1/out
 hw1/data
+
+# PyCharm
+.idea

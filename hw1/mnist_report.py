@@ -53,4 +53,4 @@ for file in data_files:
 plt.figure(avg_loss_fig.number)
 plt.savefig(os.path.join(figures_dir, "average_loss_curve"))
 
-plt.show()
+#plt.show()
