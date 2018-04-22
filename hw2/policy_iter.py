@@ -1,5 +1,6 @@
 ##################################
 # Create env
+import os
 import gym
 env = gym.make('FrozenLake-v0')
 env = env.env
@@ -120,5 +121,20 @@ def policy_iteration(mdp, gamma, nIt):
 
 
 Vs_PI, pis_PI = policy_iteration(mdp, gamma=0.95, nIt=20)
-plt.plot(Vs_PI);
-# plt.show()
+
+
+if not os.path.isdir("out"):
+    os.mkdir("out")
+
+out_dir = "out/policy_iteration"
+if not os.path.isdir(out_dir):
+    os.mkdir(out_dir)
+
+
+plt.figure()
+plt.plot(Vs_PI)
+plt.title("Policy iteration - value plot")
+plt.xlabel("Iteration")
+plt.ylabel("Value")
+plt.savefig(os.path.join(out_dir, "policy_iteration_value_plot"))
+

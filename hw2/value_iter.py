@@ -1,5 +1,6 @@
 ##################################
 # Create env
+import os
 import gym
 env = gym.make('FrozenLake-v0')
 env = env.env
@@ -116,7 +117,18 @@ Vs_VI, pis_VI = value_iteration(mdp, gamma=GAMMA, nIt=20)
 # Your optimal actions are shown by arrows.
 # At the bottom, the value of the different states are plotted.
 
+if not os.path.isdir("out"):
+    os.mkdir("out")
+
+out_dir = "out/value_iteration"
+
+if not os.path.isdir(out_dir):
+    os.mkdir(out_dir)
+
+
+i = 0
 for (V, pi) in zip(Vs_VI[:10], pis_VI[:10]):
+    i += 1
     plt.figure(figsize=(3,3))
     plt.imshow(V.reshape(4,4), cmap='gray', interpolation='none', clim=(0,1))
     ax = plt.gca()
@@ -136,5 +148,16 @@ for (V, pi) in zip(Vs_VI[:10], pis_VI[:10]):
                      color='g', size=12,  verticalalignment='center',
                      horizontalalignment='center', fontweight='bold')
     plt.grid(color='b', lw=2, ls='-')
+    plt.savefig(os.path.join(out_dir, "optimal_policy_iteration_{}".format(i)))
 
-# plt.show()
+
+# Plot state values as a function of iteration
+plt.figure()
+# v_mat = np.array(Vs_VI)
+# for i in range(v_mat.shape[1]):
+#     plt.plot(v_mat[:, i], label="state {}".format(i))
+plt.plot(Vs_VI)
+plt.title("Value iteration - state values vs iteration")
+plt.xlabel("Iteration")
+plt.ylabel("Value")
+plt.savefig(os.path.join(out_dir, "value_iteration_state_values"))
