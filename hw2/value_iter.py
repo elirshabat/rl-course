@@ -12,6 +12,8 @@ print("")
 # Let's look at what a random episode looks like.
 
 import numpy as np, numpy.random as nr, gym
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 #%matplotlib inline
 np.set_printoptions(precision=3)
