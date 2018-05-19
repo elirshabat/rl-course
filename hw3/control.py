@@ -250,7 +250,7 @@ while consecutive_no_learning_trials < NO_LEARNING_THRESHOLD:
             max_change = np.max(abs_changes)
             if max_change < TOLERANCE:
                 converged = True
-                
+
         if n_iters == 1:
             consecutive_no_learning_trials += 1
         else:
