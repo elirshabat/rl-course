@@ -215,14 +215,12 @@ while consecutive_no_learning_trials < NO_LEARNING_THRESHOLD:
         new_reward_func[observed_states_mask] = (observed_state_rewards_sum[observed_states_mask] / 
                                                  observed_state_count[observed_states_mask])
 
-        new_transition_func = np.ones([NUM_STATES, NUM_ACTIONS, NUM_STATES])/NUM_STATES
+        new_transition_func = np.ones([NUM_STATES, NUM_ACTIONS, NUM_STATES])
         for s in range(NUM_STATES):
             for a in range(NUM_ACTIONS):
                 observed_states_mask = observed_sas_num[s, a, :] > 0
-                observed_states_count = np.sum(observed_states_mask)
-                observed_states_weight = observed_states_count/NUM_STATES
-                new_transition_func[s, a, observed_states_mask] = ((observed_sas_num[s, a, observed_states_mask] / 
-                                                                    np.sum(observed_sas_num[s, a, :])) * observed_states_weight)
+                new_transition_func[s, a, observed_states_mask] = observed_sas_num[s, a, observed_states_mask]
+                new_transition_func[s, a, :] = new_transition_func[s, a, :]/np.sum(new_transition_func[s, a, :])
                                                                     
         transition_func = new_transition_func
         reward_func = new_reward_func
