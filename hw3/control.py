@@ -6,6 +6,8 @@ Author: Sanyam Mehra, sanyam@stanford.edu
 """
 from __future__ import division, print_function
 from cart_pole import CartPole, Physics
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import lfilter
@@ -288,4 +290,4 @@ x = np.arange(window//2, len(log_tstf) - window//2)
 plt.plot(x, weights[window:len(log_tstf)], 'r--')
 plt.xlabel('Num failures')
 plt.ylabel('Num steps to failure')
-plt.show()
+plt.savefig("q1_learning_curve")
