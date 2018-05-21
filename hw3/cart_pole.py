@@ -6,6 +6,8 @@ Author: Sanyam Mehra, sanyam@stanford.edu
 """
 from __future__ import division, print_function
 from math import sin, cos, pi
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 

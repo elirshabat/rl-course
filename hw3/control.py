@@ -6,8 +6,6 @@ Author: Sanyam Mehra, sanyam@stanford.edu
 """
 from __future__ import division, print_function
 from cart_pole import CartPole, Physics
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import lfilter
