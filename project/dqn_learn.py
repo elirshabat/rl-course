@@ -121,10 +121,10 @@ def dqn_learing(
             return torch.IntTensor([[random.randrange(num_actions)]])
 
     # Initialize target q function and q function, i.e. build the model.
-    ######
-
-    # YOUR CODE HERE
-
+    ###### YOUR CODE HERE
+    Q = q_func()
+    target_Q = q_func()
+    target_Q.load_state_dict(Q.state_dict())
     ######
 
 
@@ -177,9 +177,7 @@ def dqn_learing(
         # And remember that the first time you enter this loop, the model
         # may not yet have been initialized (but of course, the first step
         # might as well be random, since you haven't trained your net...)
-        #####
-
-        # YOUR CODE HERE
+        ##### TODO: YOUR CODE HERE
 
         #####
 
@@ -215,10 +213,8 @@ def dqn_learing(
             #      target_Q network. see state_dict() and load_state_dict() methods.
             #      you should update every target_update_freq steps, and you may find the
             #      variable num_param_updates useful for this (it was initialized to 0)
-            #####
-
-            # YOUR CODE HERE
-
+            ##### TODO: YOUR CODE HERE
+            pass
             #####
 
         ### 4. Log progress and keep track of statistics
