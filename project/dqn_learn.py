@@ -122,8 +122,8 @@ def dqn_learing(
 
     # Initialize target q function and q function, i.e. build the model.
     ###### YOUR CODE HERE
-    Q = q_func()
-    target_Q = q_func()
+    Q = q_func(num_actions=num_actions)
+    target_Q = q_func(num_actions=num_actions)
     target_Q.load_state_dict(Q.state_dict())
     ######
 
@@ -177,8 +177,14 @@ def dqn_learing(
         # And remember that the first time you enter this loop, the model
         # may not yet have been initialized (but of course, the first step
         # might as well be random, since you haven't trained your net...)
-        ##### TODO: YOUR CODE HERE
-
+        ##### YOUR CODE HERE
+        idx = replay_buffer.store_frame(last_obs)
+        encoded_obs = replay_buffer.encode_recent_observation()
+        action = select_epilson_greedy_action(Q, encoded_obs, t)
+        last_obs, reward, done, info = env.step(action)
+        replay_buffer.store_effect(idx, action, reward, done)
+        if done:
+            last_obs = env.reset()
         #####
 
         # at this point, the environment should have been advanced one step (and
@@ -214,7 +220,7 @@ def dqn_learing(
             #      you should update every target_update_freq steps, and you may find the
             #      variable num_param_updates useful for this (it was initialized to 0)
             ##### TODO: YOUR CODE HERE
-            pass
+            raise NotImplementedError("Not implemented beyond this line yet")
             #####
 
         ### 4. Log progress and keep track of statistics
