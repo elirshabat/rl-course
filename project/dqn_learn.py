@@ -220,6 +220,10 @@ def dqn_learing(
             #      you should update every target_update_freq steps, and you may find the
             #      variable num_param_updates useful for this (it was initialized to 0)
             ##### TODO: YOUR CODE HERE
+            # TODO: Sample batch from replay buffer
+            # TODO: Compute the Bellman error (clip error [-1, 1], multiply by -1, mask out post terminal values)
+            # TODO: Train the model - differentiate the Bellman error, use backward and optimizer.
+            # TODO: Update the weights of the target Q-function every target_update_freq steps.
             raise NotImplementedError("Not implemented beyond this line yet")
             #####
 
