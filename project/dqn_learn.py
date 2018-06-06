@@ -47,7 +47,8 @@ def dqn_learing(
     replay_buffer_size=1000000,
     batch_size=32,
     gamma=0.99,
-    learning_starts=50000,
+    learning_starts=1000,
+    # learning_starts=50000, TODO: restore
     learning_freq=4,
     frame_history_len=4,
     target_update_freq=10000
@@ -220,11 +221,26 @@ def dqn_learing(
             #      you should update every target_update_freq steps, and you may find the
             #      variable num_param_updates useful for this (it was initialized to 0)
             ##### TODO: YOUR CODE HERE
-            # TODO: Sample batch from replay buffer
-            # TODO: Compute the Bellman error (clip error [-1, 1], multiply by -1, mask out post terminal values)
-            # TODO: Train the model - differentiate the Bellman error, use backward and optimizer.
-            # TODO: Update the weights of the target Q-function every target_update_freq steps.
-            raise NotImplementedError("Not implemented beyond this line yet")
+            # Sample the replay buffer
+            obs_batch, action_batch, reward_batch, next_obs_batch, done_batch = replay_buffer.sample(batch_size)
+
+            # Compute the loss
+            target_value = reward_batch + gamma*torch.max(target_Q(torch.from_numpy(next_obs_batch)), 1)*(1.0 - done_batch)
+            print("shape of target value:", target_value.shape)
+            current_value = Q(torch.from_numpy(obs_batch))
+            loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2)
+
+            # Update the model
+            optimizer.zero_grad()
+            Q.backward(loss.data.unsqueeze(1))
+            optimizer.step()
+
+            # Update the target Q function
+            num_param_updates += 1
+            if num_param_updates % target_update_freq == 0:
+                target_Q.load_state_dict(Q.state_dict())
+
+            # raise NotImplementedError("Not implemented beyond this line yet")
             #####
 
         ### 4. Log progress and keep track of statistics
