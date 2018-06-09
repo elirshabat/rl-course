@@ -17,6 +17,8 @@ import torch.autograd as autograd
 from utils.replay_buffer import ReplayBuffer
 from utils.gym import get_wrapper_by_name
 
+import time
+
 USE_CUDA = torch.cuda.is_available()
 dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
@@ -47,12 +49,13 @@ def dqn_learing(
     replay_buffer_size=1000000,
     batch_size=32,
     gamma=0.99,
-    learning_starts=1000,
-    # learning_starts=50000, TODO: restore
+    learning_starts=50000,
     learning_freq=4,
     frame_history_len=4,
     target_update_freq=10000
     ):
+    
+    start = time.time() 
 
     """Run Deep Q-learning algorithm.
 
@@ -114,10 +117,16 @@ def dqn_learing(
     def select_epilson_greedy_action(model, obs, t):
         sample = random.random()
         eps_threshold = exploration.value(t)
-        if sample > eps_threshold:
+        if sample > 0:#eps_threshold: REMOVE
             obs = torch.from_numpy(obs).type(dtype).unsqueeze(0) / 255.0
             # Use volatile = True if variable is only used in inference mode, i.e. don’t save the history
-            return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
+            with torch.no_grad():
+                output = model(Variable(obs))
+            # if t % 10000 == 0: REMOVE
+            #     print("output is: " + str(output))
+            return output.data.max(1)[1].cpu()
+
+            #return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
         else:
             return torch.IntTensor([[random.randrange(num_actions)]])
 
@@ -145,6 +154,7 @@ def dqn_learing(
     LOG_EVERY_N_STEPS = 10000
 
     for t in count():
+
         ### 1. Check stopping criterion
         if stopping_criterion is not None and stopping_criterion(env):
             break
@@ -182,6 +192,7 @@ def dqn_learing(
         idx = replay_buffer.store_frame(last_obs)
         encoded_obs = replay_buffer.encode_recent_observation()
         action = select_epilson_greedy_action(Q, encoded_obs, t)
+        # print("action: " + str(action.item())) REMOVE
         last_obs, reward, done, info = env.step(action)
         replay_buffer.store_effect(idx, action, reward, done)
         if done:
@@ -192,6 +203,7 @@ def dqn_learing(
         # reset if done was true), and last_obs should point to the new latest
         # observation
 
+
         ### 3. Perform experience replay and train the network.
         # Note that this is only done if the replay buffer contains enough samples
         # for us to learn something useful -- until then, the model will not be
@@ -199,6 +211,14 @@ def dqn_learing(
         if (t > learning_starts and
                 t % learning_freq == 0 and
                 replay_buffer.can_sample(batch_size)):
+
+            # FIRST_UPDATE = True
+            # if FIRST_UPDATE:
+            #     print("first update: " + str(time.time() - start))
+            #     print(t)
+            #     FIRST_UPDATE = False
+
+
             # Here, you should perform training. Training consists of four steps:
             # 3.a: use the replay buffer to sample a batch of transitions (see the
             # replay buffer code for function definition, each batch that you sample
@@ -222,17 +242,71 @@ def dqn_learing(
             #      variable num_param_updates useful for this (it was initialized to 0)
             ##### TODO: YOUR CODE HERE
             # Sample the replay buffer
-            obs_batch, action_batch, reward_batch, next_obs_batch, done_batch = replay_buffer.sample(batch_size)
+            obs_batchs, action_batch, reward_batch, next_obs_batch, done_batch = replay_buffer.sample(batch_size)
+
+            # print("obs_batchs shape: " + str(obs_batchs.shape))
+            # print("action_batch shape: " + str(action_batch.shape))
+            # print("reward_batch shape: " + str(reward_batch.shape))
+            # print("next_obs_batch shape: " + str(next_obs_batch.shape))
+            # print("done_batch shape: " + str(done_batch.shape))
 
             # Compute the loss
-            target_value = reward_batch + gamma*torch.max(target_Q(torch.from_numpy(next_obs_batch)), 1)*(1.0 - done_batch)
-            print("shape of target value:", target_value.shape)
-            current_value = Q(torch.from_numpy(obs_batch))
-            loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2)
+            next_obs = torch.from_numpy(next_obs_batch).type(dtype) / 255.0
+            # next_q = target_Q(Variable(next_obs)).data.max(1)[1].cpu()
+            # print("next_q: " + str(next_q))
+
+            next_q = target_Q(Variable(next_obs))
+            # print("next_q 1:" + str(next_q))
+
+            # next_q = next_q.data
+            # print("next_q data:" + str(next_q))
+
+            # next_q = next_q.data
+            # print("next_q data:" + str(next_q))
+
+            # next_q = next_q.max(1)[1].cpu()
+            # print("next_q max cpu:" + str(next_q))
+
+            # print("next_q shape: " + str(next_q.shape))
+
+            max_next = torch.max(next_q, 1)[0]
+
+            # print("max_next: " + str(max_next))
+
+
+            # print("max_next: " + str(max))
+
+            # max_next = gamma*max_next*(1.0 - done_batch)
+            mask = torch.from_numpy(1.0 - done_batch)
+            # print("mask is: " + str(mask))
+            max_next = max_next*mask
+            max_next = gamma*max_next
+
+            target_value = torch.from_numpy(reward_batch) + max_next
+
+            # target_value = reward_batch + gamma*torch.max(target_Q(Variable(next_obs, volatile=True)).data.max(1)[1].cpu(), 1)*(1.0 - done_batch)
+            # print("shape of target value:", target_value.shape)
+            
+
+            obs = torch.from_numpy(obs_batchs).type(dtype) / 255.0
+            q_value = Q(Variable(obs))
+            action_batch = torch.from_numpy(action_batch).long().view(-1,1)
+            current_value = q_value.gather(1, action_batch).squeeze()
+
+            # print(q_value)
+            # print("curr value shape", current_value.shape)
+            # print("target_value shape", target_value.shape)
+
+            loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2).mean()
+            # print("loss is: ",loss)
+            # print("sum loss", loss.sum().item())
+
+            if t % 1000 == 0:
+                print("t = ", t, " loss: ", loss.item(), " time (min):", (time.time() - start)/60)
 
             # Update the model
             optimizer.zero_grad()
-            Q.backward(loss.data.unsqueeze(1))
+            loss.backward()
             optimizer.step()
 
             # Update the target Q function
