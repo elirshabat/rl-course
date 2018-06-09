@@ -22,6 +22,11 @@ import time
 USE_CUDA = torch.cuda.is_available()
 dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
+# print("USE_CUDA=", USE_CUDA)
+# print("dtype=", dtype)
+# print("version=",8)
+
+
 class Variable(autograd.Variable):
     def __init__(self, data, *args, **kwargs):
         if USE_CUDA:
@@ -120,20 +125,27 @@ def dqn_learing(
         if sample > 0:#eps_threshold: REMOVE
             obs = torch.from_numpy(obs).type(dtype).unsqueeze(0) / 255.0
             # Use volatile = True if variable is only used in inference mode, i.e. don’t save the history
-            with torch.no_grad():
-                output = model(Variable(obs))
-            # if t % 10000 == 0: REMOVE
-            #     print("output is: " + str(output))
-            return output.data.max(1)[1].cpu()
-
-            #return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
+            # with torch.no_grad():
+            #     output = model(Variable(obs))
+            # return output.data.max(1)[1].cpu()
+            if USE_CUDA:
+                return model(Variable(obs, volatile=True)).data.max(1)[1].cuda()
+            else:
+                return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
         else:
             return torch.IntTensor([[random.randrange(num_actions)]])
 
     # Initialize target q function and q function, i.e. build the model.
     ###### YOUR CODE HERE
-    Q = q_func(num_actions=num_actions)
-    target_Q = q_func(num_actions=num_actions)
+
+
+    if USE_CUDA:
+        Q = q_func(num_actions=num_actions).cuda()
+        target_Q = q_func(num_actions=num_actions).cuda()
+    else:
+        Q = q_func(num_actions=num_actions)
+        target_Q = q_func(num_actions=num_actions)
+
     target_Q.load_state_dict(Q.state_dict())
     ######
 
@@ -252,34 +264,22 @@ def dqn_learing(
 
             # Compute the loss
             next_obs = torch.from_numpy(next_obs_batch).type(dtype) / 255.0
-            # next_q = target_Q(Variable(next_obs)).data.max(1)[1].cpu()
-            # print("next_q: " + str(next_q))
-
             next_q = target_Q(Variable(next_obs))
-            # print("next_q 1:" + str(next_q))
+            max_next = torch.max(next_q, 1)[0].cuda()
+            # print("max_next=", max_next)
+            mask = torch.from_numpy(1.0 - done_batch).type(dtype)
+            # mask = torch.tensor(1.0 - done_batch, dtype=dtype)
 
-            # next_q = next_q.data
-            # print("next_q data:" + str(next_q))
+            # print("max_next dtype=", max_next.dtype)
+            # print("mask dtype=", mask.dtype)
+            # if USE_CUDA:
+            #     mask = mask.cuda()               
 
-            # next_q = next_q.data
-            # print("next_q data:" + str(next_q))
-
-            # next_q = next_q.max(1)[1].cpu()
-            # print("next_q max cpu:" + str(next_q))
-
-            # print("next_q shape: " + str(next_q.shape))
-
-            max_next = torch.max(next_q, 1)[0]
-
-            # print("max_next: " + str(max_next))
-
-
-            # print("max_next: " + str(max))
-
-            # max_next = gamma*max_next*(1.0 - done_batch)
-            mask = torch.from_numpy(1.0 - done_batch)
-            # print("mask is: " + str(mask))
+            # print("max_next =", max_next)
+            # print("mask =", mask)
             max_next = max_next*mask
+
+            # print("res=", max_next)
             max_next = gamma*max_next
 
             target_value = torch.from_numpy(reward_batch) + max_next
