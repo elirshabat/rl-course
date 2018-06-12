@@ -8,8 +8,8 @@ from utils.schedule import LinearSchedule
 
 BATCH_SIZE = 32
 GAMMA = 0.99
-REPLAY_BUFFER_SIZE = 500000 #1000000 REMOVE
-LEARNING_STARTS = 1000#50000 REMOVE
+REPLAY_BUFFER_SIZE = 1000000 
+LEARNING_STARTS = 50000 
 LEARNING_FREQ = 4
 FRAME_HISTORY_LEN = 4
 TARGER_UPDATE_FREQ = 10000
@@ -47,6 +47,7 @@ def main(env, num_timesteps):
     )
 
 if __name__ == '__main__':
+
     # Get Atari games.
     benchmark = gym.benchmark_spec('Atari40M')
 

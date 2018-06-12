@@ -22,10 +22,6 @@ import time
 USE_CUDA = torch.cuda.is_available()
 dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
-# print("USE_CUDA=", USE_CUDA)
-# print("dtype=", dtype)
-# print("version=",8)
-
 
 class Variable(autograd.Variable):
     def __init__(self, data, *args, **kwargs):
@@ -122,12 +118,9 @@ def dqn_learing(
     def select_epilson_greedy_action(model, obs, t):
         sample = random.random()
         eps_threshold = exploration.value(t)
-        if sample > 0:#eps_threshold: REMOVE
+        if sample > eps_threshold:
             obs = torch.from_numpy(obs).type(dtype).unsqueeze(0) / 255.0
             # Use volatile = True if variable is only used in inference mode, i.e. don’t save the history
-            # with torch.no_grad():
-            #     output = model(Variable(obs))
-            # return output.data.max(1)[1].cpu()
             if USE_CUDA:
                 return model(Variable(obs, volatile=True)).data.max(1)[1].cuda()
             else:
@@ -256,53 +249,21 @@ def dqn_learing(
             # Sample the replay buffer
             obs_batchs, action_batch, reward_batch, next_obs_batch, done_batch = replay_buffer.sample(batch_size)
 
-            # print("obs_batchs shape: " + str(obs_batchs.shape))
-            # print("action_batch shape: " + str(action_batch.shape))
-            # print("reward_batch shape: " + str(reward_batch.shape))
-            # print("next_obs_batch shape: " + str(next_obs_batch.shape))
-            # print("done_batch shape: " + str(done_batch.shape))
-
             # Compute the loss
             next_obs = torch.from_numpy(next_obs_batch).type(dtype) / 255.0
             next_q = target_Q(Variable(next_obs))
-            max_next = torch.max(next_q, 1)[0].cuda()
-            # print("max_next=", max_next)
-            mask = torch.from_numpy(1.0 - done_batch).type(dtype)
-            # mask = torch.tensor(1.0 - done_batch, dtype=dtype)
-
-            # print("max_next dtype=", max_next.dtype)
-            # print("mask dtype=", mask.dtype)
-            # if USE_CUDA:
-            #     mask = mask.cuda()               
-
-            # print("max_next =", max_next)
-            # print("mask =", mask)
-            max_next = max_next*mask
-
-            # print("res=", max_next)
-            max_next = gamma*max_next
-
-            target_value = torch.from_numpy(reward_batch) + max_next
-
-            # target_value = reward_batch + gamma*torch.max(target_Q(Variable(next_obs, volatile=True)).data.max(1)[1].cpu(), 1)*(1.0 - done_batch)
-            # print("shape of target value:", target_value.shape)
-            
-
-            obs = torch.from_numpy(obs_batchs).type(dtype) / 255.0
-            q_value = Q(Variable(obs))
-            action_batch = torch.from_numpy(action_batch).long().view(-1,1)
+            max_next = torch.max(next_q, 1)[0]
+            mask = Variable(torch.from_numpy(1.0 - done_batch).type(dtype))
+            max_next = gamma*(max_next*mask)
+            target_value = Variable(torch.from_numpy(reward_batch).type(dtype)) + max_next
+            # target_value = reward_batch + gamma*torch.max(target_Q(Variable(next_obs, volatile=True)).data.max(1)[1].cpu(), 1)*(1.0 - done_batch)            
+            q_value = Q(Variable(torch.from_numpy(obs_batchs).type(dtype) / 255.0))
+            action_batch = Variable(torch.from_numpy(action_batch).type(dtype).long().view(-1,1))
             current_value = q_value.gather(1, action_batch).squeeze()
-
-            # print(q_value)
-            # print("curr value shape", current_value.shape)
-            # print("target_value shape", target_value.shape)
-
             loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2).mean()
-            # print("loss is: ",loss)
-            # print("sum loss", loss.sum().item())
 
-            if t % 1000 == 0:
-                print("t = ", t, " loss: ", loss.item(), " time (min):", (time.time() - start)/60)
+            if t % 10000 == 0:
+                print("t = ", t, " loss: ", loss.data, " time (min):", (time.time() - start)/60)
 
             # Update the model
             optimizer.zero_grad()
