@@ -8,15 +8,12 @@ from collections import namedtuple
 from itertools import count
 import random
 import gym.spaces
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.autograd as autograd
-
 from utils.replay_buffer import ReplayBuffer
 from utils.gym import get_wrapper_by_name
-
 import time
 
 USE_CUDA = torch.cuda.is_available()
@@ -51,6 +48,7 @@ def dqn_learing(
     batch_size=32,
     gamma=0.99,
     learning_starts=50000,
+    # learning_starts=500,
     learning_freq=4,
     frame_history_len=4,
     target_update_freq=10000
@@ -122,9 +120,11 @@ def dqn_learing(
             obs = torch.from_numpy(obs).type(dtype).unsqueeze(0) / 255.0
             # Use volatile = True if variable is only used in inference mode, i.e. don’t save the history
             if USE_CUDA:
-                return model(Variable(obs, volatile=True)).data.max(1)[1].cuda()
+                # return model(Variable(obs, volatile=True)).data.max(1)[1].cuda()
+                return model(Variable(obs).detach()).data.max(1)[1].cuda()
             else:
-                return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
+                # return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
+                return model(Variable(obs).detach()).data.max(1)[1].cpu()
         else:
             return torch.IntTensor([[random.randrange(num_actions)]])
 
@@ -146,6 +146,11 @@ def dqn_learing(
     # Construct Q network optimizer function
     optimizer = optimizer_spec.constructor(Q.parameters(), **optimizer_spec.kwargs)
 
+    # TODO: Remove - My statistics:
+    # chosen_actions = []
+    # observations = []
+    # observed_rewards = []
+
     # Construct the replay buffer
     replay_buffer = ReplayBuffer(replay_buffer_size, frame_history_len)
 
@@ -157,6 +162,7 @@ def dqn_learing(
     best_mean_episode_reward = -float('inf')
     last_obs = env.reset()
     LOG_EVERY_N_STEPS = 10000
+    # LOG_EVERY_N_STEPS = 1000
 
     for t in count():
 
@@ -197,11 +203,15 @@ def dqn_learing(
         idx = replay_buffer.store_frame(last_obs)
         encoded_obs = replay_buffer.encode_recent_observation()
         action = select_epilson_greedy_action(Q, encoded_obs, t)
-        # print("action: " + str(action.item())) REMOVE
         last_obs, reward, done, info = env.step(action)
         replay_buffer.store_effect(idx, action, reward, done)
         if done:
             last_obs = env.reset()
+
+        # TODO: remove
+        # chosen_actions.append(action)
+        # observations.append(last_obs)
+        # observed_rewards.append(reward)
         #####
 
         # at this point, the environment should have been advanced one step (and
@@ -261,9 +271,12 @@ def dqn_learing(
             action_batch = Variable(torch.from_numpy(action_batch).type(dtype).long().view(-1,1))
             current_value = q_value.gather(1, action_batch).squeeze()
             loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2).mean()
+            # loss = torch.clamp(loss_func(current_value, target_value), -1, 1)
 
             if t % 10000 == 0:
+            # if t % 1000 == 0:
                 print("t = ", t, " loss: ", loss.data, " time (min):", (time.time() - start)/60)
+
 
             # Update the model
             optimizer.zero_grad()
