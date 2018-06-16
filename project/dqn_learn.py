@@ -261,14 +261,19 @@ def dqn_learing(
 
             # Compute the loss
             next_obs = torch.from_numpy(next_obs_batch).type(dtype) / 255.0
-            next_q = target_Q(Variable(next_obs))
+            # next_q = target_Q(Variable(next_obs))
+            next_q = target_Q(next_obs)
             max_next = torch.max(next_q, 1)[0]
-            mask = Variable(torch.from_numpy(1.0 - done_batch).type(dtype))
+            # mask = Variable(torch.from_numpy(1.0 - done_batch).type(dtype))
+            mask = torch.from_numpy(1.0 - done_batch).type(dtype)
             max_next = gamma*(max_next*mask)
-            target_value = Variable(torch.from_numpy(reward_batch).type(dtype)) + max_next
+            # target_value = Variable(torch.from_numpy(reward_batch).type(dtype)) + max_next
+            target_value = torch.from_numpy(reward_batch).type(dtype) + max_next
             # target_value = reward_batch + gamma*torch.max(target_Q(Variable(next_obs, volatile=True)).data.max(1)[1].cpu(), 1)*(1.0 - done_batch)            
-            q_value = Q(Variable(torch.from_numpy(obs_batchs).type(dtype) / 255.0))
-            action_batch = Variable(torch.from_numpy(action_batch).type(dtype).long().view(-1,1))
+            # q_value = Q(Variable(torch.from_numpy(obs_batchs).type(dtype) / 255.0))
+            q_value = Q(torch.from_numpy(obs_batchs).type(dtype) / 255.0)
+            # action_batch = Variable(torch.from_numpy(action_batch).type(dtype).long().view(-1,1))
+            action_batch = torch.from_numpy(action_batch).type(dtype).long().view(-1, 1)
             current_value = q_value.gather(1, action_batch).squeeze()
             loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2).mean()
             # loss = torch.clamp(loss_func(current_value, target_value), -1, 1)
