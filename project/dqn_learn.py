@@ -56,8 +56,6 @@ def dqn_learing(
     target_update_freq=10000
     ):
     
-    start = time.time() 
-
     """Run Deep Q-learning algorithm.
 
     You can specify your own convnet using q_func.
@@ -178,16 +176,16 @@ def dqn_learing(
         # this steps the environment forward one step
         # obs = env.reset()
         # this resets the environment if you reached an episode boundary.
-        # Don't forget to call env.reset() to get a new observation if done
+        # Don't forget to call env.reset() to get current new observation if done
         # is true!!
         # Note that you cannot use "last_obs" directly as input
         # into your network, since it needs to be processed to include context
         # from previous frames. You should check out the replay buffer
         # implementation in dqn_utils.py to see what functionality the replay
-        # buffer exposes. The replay buffer has a function called
+        # buffer exposes. The replay buffer has current function called
         # encode_recent_observation that will take the latest observation
         # that you pushed into the buffer and compute the corresponding
-        # input that should be given to a Q network by appending some
+        # input that should be given to current Q network by appending some
         # previous frames.
         # Don't forget to include epsilon greedy exploration!
         # And remember that the first time you enter this loop, the model
@@ -197,7 +195,6 @@ def dqn_learing(
         idx = replay_buffer.store_frame(last_obs)
         encoded_obs = replay_buffer.encode_recent_observation()
         action = select_epilson_greedy_action(Q, encoded_obs, t)
-        # print("action: " + str(action.item())) REMOVE
         last_obs, reward, done, info = env.step(action)
         replay_buffer.store_effect(idx, action, reward, done)
         if done:
@@ -217,15 +214,8 @@ def dqn_learing(
                 t % learning_freq == 0 and
                 replay_buffer.can_sample(batch_size)):
 
-            # FIRST_UPDATE = True
-            # if FIRST_UPDATE:
-            #     print("first update: " + str(time.time() - start))
-            #     print(t)
-            #     FIRST_UPDATE = False
-
-
             # Here, you should perform training. Training consists of four steps:
-            # 3.a: use the replay buffer to sample a batch of transitions (see the
+            # 3.current: use the replay buffer to sample current batch of transitions (see the
             # replay buffer code for function definition, each batch that you sample
             # should consist of current observations, current actions, rewards,
             # next observations, and done indicator).
@@ -248,26 +238,21 @@ def dqn_learing(
             ##### TODO: YOUR CODE HERE
             # Sample the replay buffer
             obs_batchs, action_batch, reward_batch, next_obs_batch, done_batch = replay_buffer.sample(batch_size)
-
-            # Compute the loss
-            next_obs = torch.from_numpy(next_obs_batch).type(dtype) / 255.0
-            next_q = target_Q(Variable(next_obs))
-            max_next = torch.max(next_q, 1)[0]
-            mask = Variable(torch.from_numpy(1.0 - done_batch).type(dtype))
-            max_next = gamma*(max_next*mask)
-            target_value = Variable(torch.from_numpy(reward_batch).type(dtype)) + max_next
-            # target_value = reward_batch + gamma*torch.max(target_Q(Variable(next_obs, volatile=True)).data.max(1)[1].cpu(), 1)*(1.0 - done_batch)            
-            q_value = Q(Variable(torch.from_numpy(obs_batchs).type(dtype) / 255.0))
+            
+            obs_batchs = Variable(torch.from_numpy(obs_batchs).type(dtype)) / 255.0
             action_batch = Variable(torch.from_numpy(action_batch).type(dtype).long().view(-1,1))
-            current_value = q_value.gather(1, action_batch).squeeze()
-            loss = (torch.clamp(current_value - target_value, -1, 1)).pow(2).mean()
+            reward_batch = Variable(torch.from_numpy(reward_batch).type(dtype))
+            next_obs_batch = Variable(torch.from_numpy(next_obs_batch).type(dtype)) / 255.0
+            done_batch = Variable(torch.from_numpy(done_batch).type(dtype))
 
-            if t % 10000 == 0:
-                print("t = ", t, " loss: ", loss.data, " time (min):", (time.time() - start)/60)
+            max_next_q = torch.max(target_Q(next_obs_batch), 1)[0]
+            target = reward_batch + gamma*(1.0-done_batch)*max_next_q
+            current = Q(obs_batchs)
+            current_value = current.gather(1, action_batch)
+            d_error = torch.clamp(current_value.squeeze(1) - target, -1, 1).unsqueeze(1)
 
-            # Update the model
             optimizer.zero_grad()
-            loss.backward()
+            current_value.backward(d_error)
             optimizer.step()
 
             # Update the target Q function
@@ -296,7 +281,7 @@ def dqn_learing(
             print("exploration %f" % exploration.value(t))
             sys.stdout.flush()
 
-            # Dump statistics to pickle
+            #Dump statistics to pickle
             with open('statistics.pkl', 'wb') as f:
                 pickle.dump(Statistic, f)
                 print("Saved to %s" % 'statistics.pkl')
