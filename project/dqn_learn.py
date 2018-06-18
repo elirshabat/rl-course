@@ -100,6 +100,8 @@ def dqn_learing(
     assert type(env.observation_space) == gym.spaces.Box
     assert type(env.action_space)      == gym.spaces.Discrete
 
+    Statistic['gamma'] = gamma
+
     ###############
     # BUILD MODEL #
     ###############
@@ -282,6 +284,6 @@ def dqn_learing(
             sys.stdout.flush()
 
             #Dump statistics to pickle
-            with open('statistics.pkl', 'wb') as f:
+            with open('test_statistics1.pkl', 'wb') as f:
                 pickle.dump(Statistic, f)
-                print("Saved to %s" % 'statistics.pkl')
+                print("Saved to %s" % 'test_statistics1.pkl')
