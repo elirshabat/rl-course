@@ -113,4 +113,6 @@ hw3/q1_learning_curve.png
 project/tmp
 
 # Statistics:
-project/statistics
+*.pkl
+*.bak
+*.png

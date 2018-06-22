@@ -61,9 +61,12 @@ def plot_multiple_statistics(dir_path):
 
 
 # update_statistics_file("statistics/test_statistics_gamma0999.pkl", "gamma", 0.999)
-# update_statistics_file("statistics/test_statistics_alon_default.pkl", "gamma", 0.99)
+# update_statistics_file("statistics/test_statistics_alon_default.pkl", "learning_rate", 0.0025)
 # update_statistics_file("statistics/test_statistics_alon_lr0005.pkl", "learning_rate", 0.0005)
+# update_statistics_file("statistics/test_statistics_batch16.pkl", "batch_size", 16)
 # plot_single_statistics("statistics/test_statistics_gamma0999.pkl")
-plot_multiple_statistics('statistics')
+# update_statistics_file("statistics/test_statistics_lr025.pkl", "learning_rate", 0.25)
+# update_statistics_file("statistics/test_statistics_lr_005.pkl", "learning_rate", 0.05)
 
-plt.show()
+# plot_multiple_statistics('statistics')
+# plt.show()
